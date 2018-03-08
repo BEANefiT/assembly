@@ -7,14 +7,16 @@ section		.data
 
 section		.text
 
-mov rdi, 0x1
-mov rsi, msg
-mov rbx, len
-call bprintf
+start:
 
-mov rax, 0x2000001
-mov rdi, 0
-syscall
+	mov rdi, 0x1
+	mov rsi, msg
+	mov rbx, len
+	call bprintf
+
+	mov rax, 0x2000001
+	xor rdi, rdi
+	syscall
 
 
 ;---------------------------------;
@@ -40,7 +42,7 @@ bprintf:
 		jne .printstack
 
 		mov rdx, 0x1		; write str with length = 1 (write symb)
-		mov rax, 0x2000004	; 'write' convention for 0x80 interrupt
+		mov rax, 0x2000004	; 'write' convention for syscallt
 		syscall
 	
 		inc rsi			; next symb
@@ -58,19 +60,19 @@ bprintf:
 			cmp byte [rsi], 'c'
 		;	je .print_c
 
-			cmp byte [rsi], "s"
+			cmp byte [rsi], 's'
 		;	je .print_s
 
-			cmp byte [rsi], "d"
+			cmp byte [rsi], 'd'
 		;	je .print_d
 
-			cmp byte [rsi], "o"
+			cmp byte [rsi], 'o'
 		;	je .print_o
 
-			cmp byte [rsi], "x"
+			cmp byte [rsi], 'x'
 		;	je .print_x
 
-			cmp byte [rsi], "b"
+			cmp byte [rsi], 'b'
 		;	je .print_b
 
 			jmp .error	; if incorrect letter after '%'
