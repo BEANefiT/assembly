@@ -1,4 +1,4 @@
-global _main
+global start
 
 section		.data
 
@@ -7,7 +7,7 @@ section		.data
 
 section		.text
 
-_main:
+start:
 
 	mov rdi, 1
 	mov rsi, msg
@@ -38,8 +38,8 @@ bprintf:
 
 	.next:
 
-		cmp byte [rel + rsi], '%'	; checking for '%' symb
-		jne .printstack
+		cmp rsi, '%'	; checking for '%' symb
+		je .printstack
 
 		mov rdx, 1		; write str with length = 1 (write symb)
 		mov rax, 0x2000004	; 'write' convention for syscallt
@@ -57,22 +57,22 @@ bprintf:
 			cmp rbx, 0
 		;	je .error	; if no letter after '%' symb
 
-			cmp byte [rel + rsi], 'c'
+			cmp byte [rsi], 'c'
 		;	je .print_c
 
-			cmp byte [rel + rsi], 's'
+			cmp byte [rsi], 's'
 		;	je .print_s
 
-			cmp byte [rel + rsi], 'd'
+			cmp byte [rsi], 'd'
 		;	je .print_d
 
-			cmp byte [rel + rsi], 'o'
+			cmp byte [rsi], 'o'
 		;	je .print_o
 
-			cmp byte [rel + rsi], 'x'
+			cmp byte [rsi], 'x'
 		;	je .print_x
 
-			cmp byte [rel + rsi], 'b'
+			cmp byte [rsi], 'b'
 		;	je .print_b
 
 			jmp .error	; if incorrect letter after '%'
