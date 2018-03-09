@@ -2,8 +2,10 @@ global start
 
 section		.data
 
-	msg:	db	"Hello %corld", 10
+	msg:	db	"He%clo %c%sl%c", 10
 	.len:	equ	$ - msg
+
+	str:	db	"or%"
 
 	buf:	times 32 db '%'
 
@@ -11,11 +13,19 @@ section		.text
 
 start:
 
-	mov	rax, 'w'
 	mov 	rdi, 1
 	mov 	rsi, msg
 	mov 	rbx, msg.len
+
+	mov	rax, 'd'
 	push	rax
+	mov	rax, str
+	push	rax
+	mov	rax, 'w'
+	push	rax
+	mov	rax, 'l'
+	push	rax
+
 	mov	rbp, rsp
 	call 	bprintf
 	mov 	rax, 0x2000001
@@ -64,8 +74,8 @@ bprintf:
 			cmp byte	[rsi], 'c'
 			je		.print_c
 
-			cmp rsi, 's'
-		;	je .print_s
+			cmp byte	[rsi], 's'
+			je .print_s
 
 			cmp rsi, 'd'
 		;	je .print_d
@@ -99,13 +109,10 @@ bprintf:
 	.print_c:
 
 		push	rsi
-		push	rbp
-		mov 	rbp, rsp
-
 		call	print_c
-
-		pop	rbp
 		pop	rsi
+
+		add	rbp, 8
 
 		cmp	rax, 1
 		jne	.error
@@ -116,6 +123,23 @@ bprintf:
 
 		jmp 	.contin
 
+	.print_s:
+		
+		push	rsi
+		call	print_c
+		pop	rsi
+
+		add	rbp, 8
+
+		cmp	rax, 0
+		jb	.error
+
+		mov	rdx, 1
+		inc	rsi
+		dec	rbx
+
+		jmp	.contin
+
 ;************************bprintf******************************
 
 ;---------------------------------;
@@ -124,7 +148,7 @@ bprintf:
 ; | Entry:			| ;
 ; |	rdi <== output dest	| ;
 ; | Destr:			| ;
-; |	rdx, rsi, rbp		| ;
+; |	rdx, rsi		| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -136,9 +160,9 @@ print_c:
 
 	mov 		rsi, buf
 	
-	mov		rax, [rbp + 24]
+	mov		rax, [rbp]
 	mov		[rsi], rax
-	mov 		dx, 1
+	mov 		rdx, 1
 	mov 		rax, 0x2000004
 	syscall
 	mov byte	[rsi], '%'
@@ -146,3 +170,50 @@ print_c:
 	mov 		rax, 1
 
 	ret
+
+;**********************print_c********************************
+
+;---------------------------------;
+; 				  ;
+; |===========print_s===========| ;
+; | Entry:			| ;
+; |	rdi <== output dest	| ;
+; | Destr:			| ;
+; |	rdx, rsi		| ;
+; | Ret:			| ;
+; | 	num of written symbs	| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+print_s:
+	
+	mov	rdx, 0
+	mov	rsi, [rbp]
+
+	.next:
+
+		cmp byte	[rsi + rdx], '%'
+		je		.contin
+
+		cmp byte	[rsi + rdx], '\'
+		je		.exptn
+
+		inc		rdx
+		jmp		.next
+
+	.exptn:
+
+		times 2 inc	rdx
+		jmp 		.next
+
+.contin:
+		
+	mov	rax, 0x2000004
+	syscall
+
+	mov	rax, rdx
+
+	ret
+
+;*************************print_s******************************
