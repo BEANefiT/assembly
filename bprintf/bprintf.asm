@@ -2,7 +2,7 @@ global start
 
 section		.data
 
-	msg:	db	"Hello world", 10
+	msg:	db	"Hello %corld", 10
 	.len:	equ	$ - msg
 
 	buf:	times 32 db '%'
@@ -11,11 +11,13 @@ section		.text
 
 start:
 
+	mov	rax, 'q'
 	mov 	rdi, 1
 	mov 	rsi, msg
 	mov 	rbx, msg.len
+	push	rax
+	mov	rbp, rsp
 	call 	bprintf
-
 	mov 	rax, 0x2000001
 	xor 	rdi, rdi
 	syscall
@@ -40,17 +42,17 @@ bprintf:
 
 	.next:
 
-		cmp	rsi, '%'	; checking for '%' symb
-		je 	.printstack
+		cmp byte	[rsi], '%'	; checking for '%' symb
+		je 		.printstack
 
-		mov 	rdx, 1		; write str with length = 1 (write symb)
-		mov 	rax, 0x2000004	; 'write' convention for syscallt
+		mov 		rdx, 1		; write str with length = 1 (write symb)
+		mov 		rax, 0x2000004	; 'write' convention for syscallt
 		syscall
 	
-		inc 	rsi			; next symb
-		dec 	rbx
-		add 	rbx, 0xf00
-		jmp 	.contin
+		inc 		rsi			; next symb
+		dec 		rbx
+		add 		rbx, 0xf00
+		jmp 		.contin
 
 		.printstack:
 			
@@ -59,8 +61,8 @@ bprintf:
 			cmp 	bl, 0
 			je 	.error	; if no letter after '%' symb
 
-			cmp rsi, 'c'
-		;	je .print_c
+			cmp byte	[rsi], 'c'
+			je		.print_c
 
 			cmp rsi, 's'
 		;	je .print_s
@@ -92,18 +94,22 @@ bprintf:
 	.error:
 
 		mov rax, 0xffffffff	; ret (-1)
+		push rbp
 		ret
 
 	.print_c:
 
-		mov rcx, rsi
-		;mov rsi, buf
-
+		mov r8, rsi
+		mov rsi, buf
+		
+		push	rbp
+		mov 	rbp, rsp
 		call print_c
+		pop	rbp
 		cmp rax, 1
 		jne .error
 
-		mov rsi, rcx
+		mov rsi, r8
 		mov rdx, 1
 		inc rsi
 		dec rbx
@@ -129,11 +135,12 @@ bprintf:
 	
 print_c:
 
-	mov rsi, 'w'
-	mov dx, 1
-	mov rax, 0x2000004
+	mov		rax, [rbp + 16]
+	mov		[rsi], rax
+	mov 		dx, 1
+	mov 		rax, 0x2000004
 	syscall
 
-	mov rax, 1
+	mov 		rax, 1
 
 	ret
