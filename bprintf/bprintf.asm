@@ -2,20 +2,22 @@ global start
 
 section		.data
 
-	msg:	db "Hello world", 10
-	.len:	equ $ - msg
+	msg:	db	"Hello world", 10
+	.len:	equ	$ - msg
+
+	buf:	times 32 db '%'
 
 section		.text
 
 start:
 
-	mov rdi, 1
-	mov rsi, msg
-	mov rbx, msg.len
-	call bprintf
+	mov 	rdi, 1
+	mov 	rsi, msg
+	mov 	rbx, msg.len
+	call 	bprintf
 
-	mov rax, 0x2000001
-	xor rdi, rdi
+	mov 	rax, 0x2000001
+	xor 	rdi, rdi
 	syscall
 
 
@@ -38,41 +40,41 @@ bprintf:
 
 	.next:
 
-		cmp rsi, '%'	; checking for '%' symb
-		je .printstack
+		cmp	rsi, '%'	; checking for '%' symb
+		je 	.printstack
 
-		mov rdx, 1		; write str with length = 1 (write symb)
-		mov rax, 0x2000004	; 'write' convention for syscallt
+		mov 	rdx, 1		; write str with length = 1 (write symb)
+		mov 	rax, 0x2000004	; 'write' convention for syscallt
 		syscall
 	
-		inc rsi			; next symb
-		dec rbx
-		add rbx, 0x256
-		jmp .contin
+		inc 	rsi			; next symb
+		dec 	rbx
+		add 	rbx, 0xf00
+		jmp 	.contin
 
 		.printstack:
 			
-			inc rsi		; next symb
-			dec rbx
-			cmp rbx, 0
-		;	je .error	; if no letter after '%' symb
+			inc 	rsi		; next symb
+			dec 	rbx
+			cmp 	bl, 0
+			je 	.error	; if no letter after '%' symb
 
-			cmp byte [rsi], 'c'
+			cmp rsi, 'c'
 		;	je .print_c
 
-			cmp byte [rsi], 's'
+			cmp rsi, 's'
 		;	je .print_s
 
-			cmp byte [rsi], 'd'
+			cmp rsi, 'd'
 		;	je .print_d
 
-			cmp byte [rsi], 'o'
+			cmp rsi, 'o'
 		;	je .print_o
 
-			cmp byte [rsi], 'x'
+			cmp rsi, 'x'
 		;	je .print_x
 
-			cmp byte [rsi], 'b'
+			cmp rsi, 'b'
 		;	je .print_b
 
 			jmp .error	; if incorrect letter after '%'
@@ -91,4 +93,47 @@ bprintf:
 
 		mov rax, 0xffffffff	; ret (-1)
 		ret
-		
+
+	.print_c:
+
+		mov rcx, rsi
+		;mov rsi, buf
+
+		call print_c
+		cmp rax, 1
+		jne .error
+
+		mov rsi, rcx
+		mov rdx, 1
+		inc rsi
+		dec rbx
+
+		jmp .contin
+
+;************************bprintf******************************
+
+;---------------------------------;
+; 				  ;
+; |===========print_c===========| ;
+; | Entry:			| ;
+; |	rdi <== output dest	| ;
+; |	rsi <== buffer addr	| ;
+; | Destr:			| ;
+; |	rdx			| ;
+; | Ret:			| ;
+; | 	num of written symbs	| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+	
+print_c:
+
+	mov rsi, 'w'
+	mov dx, 1
+	mov rax, 0x2000004
+	syscall
+
+	mov rax, 1
+
+	ret
