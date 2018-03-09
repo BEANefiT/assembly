@@ -11,7 +11,7 @@ section		.text
 
 start:
 
-	mov	rax, 'q'
+	mov	rax, 'w'
 	mov 	rdi, 1
 	mov 	rsi, msg
 	mov 	rbx, msg.len
@@ -94,27 +94,27 @@ bprintf:
 	.error:
 
 		mov rax, 0xffffffff	; ret (-1)
-		push rbp
 		ret
 
 	.print_c:
 
-		mov r8, rsi
-		mov rsi, buf
-		
+		push	rsi
 		push	rbp
 		mov 	rbp, rsp
-		call print_c
+
+		call	print_c
+
 		pop	rbp
-		cmp rax, 1
-		jne .error
+		pop	rsi
 
-		mov rsi, r8
-		mov rdx, 1
-		inc rsi
-		dec rbx
+		cmp	rax, 1
+		jne	.error
 
-		jmp .contin
+		mov 	rdx, 1
+		inc 	rsi
+		dec 	rbx
+
+		jmp 	.contin
 
 ;************************bprintf******************************
 
@@ -123,9 +123,8 @@ bprintf:
 ; |===========print_c===========| ;
 ; | Entry:			| ;
 ; |	rdi <== output dest	| ;
-; |	rsi <== buffer addr	| ;
 ; | Destr:			| ;
-; |	rdx			| ;
+; |	rdx, rsi, rbp		| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -135,11 +134,14 @@ bprintf:
 	
 print_c:
 
-	mov		rax, [rbp + 16]
+	mov 		rsi, buf
+	
+	mov		rax, [rbp + 24]
 	mov		[rsi], rax
 	mov 		dx, 1
 	mov 		rax, 0x2000004
 	syscall
+	mov byte	[rsi], '%'
 
 	mov 		rax, 1
 
