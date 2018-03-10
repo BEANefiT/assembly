@@ -4,7 +4,7 @@ section		.data
 
 
 
-	msg:	db	"H%c%so%b %sld", 10
+	msg:	db	"H%c%so%b %sld%b", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
@@ -13,7 +13,7 @@ section		.data
 
 	err:	db	"rorerrorerrorerr1oerror", 10
 
-	buf:	times 33 db ' '
+	buf:	times 32 db '%'
 
 section		.text
 
@@ -25,10 +25,12 @@ start:
 
 	;mov	rax, 'l'
 	;push	rax
+	mov	rax, 0xf
+	push	rax
 	mov	rax, st
 	sub	rax, msg.len
 	push	rax
-	mov	rax, 2
+	mov	rax, 0x5
 	push	rax
 	mov	rax, sw
 	sub	rax, msg.len
@@ -270,30 +272,32 @@ print_b:
 
 	mov	rsi, buf
 	sub	rsi, msg.len
-	sub	rsi, 31
+	sub	rsi, 0x1f
 
 	mov	r11, [rbp]
+
 	mov	r9b, 0x20
 
 	.count:
 		
-		shl		r11, 1
-		jc		.setcount
+		shl		r11d, 1
 		dec		r9b
+		jc		.setcount
 		jmp		.count
 
 	.setcount:
 
-		mov		al, 0x20
-		sub		al, r9b
-		mov byte	[rsi], al
+		mov byte	[rsi], 0x31
 		inc		rsi
+
+		mov byte	r12b, r9b
+		inc		r12b
 
 	.next:
 
-		shl		r11, 1
 		xor		al, al
-		adc		al, 0
+		shl		r11d, 1
+		adc		al, 0x30
 		mov byte	[rsi], al
 		inc		rsi
 		dec		r9b
@@ -301,10 +305,10 @@ print_b:
 		ja		.next
 
 	mov		rsi, buf
-	sub		rsi, 30
+	sub		rsi, 0x1f
 	sub		rsi, msg.len
 	xor		dx, dx
-	mov byte	dh, [rsi - 1]
+	mov byte	dl, r12b
 	mov		rax, 0x2000004
 	push		rdx
 	syscall
