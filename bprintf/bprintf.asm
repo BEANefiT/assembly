@@ -4,12 +4,12 @@ section		.data
 
 
 
-	msg:	db	"Hell%c %sld", 10
+	msg:	db	"Hell%c world", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
 
-	buf	times 32 db '%'
+	err:	db	"rorerrorerrorerr1oerror", 10
 
 section		.text
 
@@ -21,9 +21,9 @@ start:
 
 	;mov	rax, 'l'
 	;push	rax
-	mov	rax, st
-	sub	rax, msg.len
-	push	rax
+	;mov	rax, st
+	;sub	rax, msg.len
+	;push	rax
 	mov	rax, 'o'
 	push	rax
 
@@ -51,23 +51,27 @@ start:
 
 bprintf:
 
+	mov 		rdx, 0
 	.next:
 
-		cmp byte	[rsi], '%'	; checking for '%' symb
+		cmp byte	[rsi + rdx], '%'	; checking for '%' symb
 		je 		.printstack
 
-		mov 		rdx, 1		; write str with length = 1 (write symb)
-		mov 		rax, 0x2000004	; 'write' convention for syscallt
-		syscall
 	
-		inc 		rsi			; next symb
 		dec 		rbx
 		add 		rbx, 0xf00
+		inc		rdx
 		jmp 		.contin
 
 		.printstack:
 			
-			inc 	rsi		; next symb
+			mov	rax, 0x2000004
+			push	rdx
+			syscall
+			pop	rdx
+
+			inc	rsi
+			add	rsi, rdx
 			dec 	rbx
 			cmp 	bl, 0
 			je 	.error	; if no letter after '%' symb
@@ -78,16 +82,16 @@ bprintf:
 			cmp byte	[rsi], 's'
 			je 		.print_s
 
-			cmp rsi, 'd'
+		;	cmp rsi, 'd'
 		;	je .print_d
 
-			cmp rsi, 'o'
+		;	cmp rsi, 'o'
 		;	je .print_o
 
-			cmp rsi, 'x'
+		;	cmp rsi, 'x'
 		;	je .print_x
 
-			cmp rsi, 'b'
+		;	cmp rsi, 'b'
 		;	je .print_b
 
 			jmp .error	; if incorrect letter after '%'
@@ -99,12 +103,22 @@ bprintf:
 			jne .next
 	
 	shr rbx, 8
+
+	mov rax, 0x2000004
+	syscall 
+
 	mov rax, rbx			; bprintf rets written value
 	ret
 
 	.error:
 
 		mov rax, 0xffffffff	; ret (-1)
+
+		mov	rax, 0x2000004
+		mov	rdx, 6
+		mov	rsi, err
+		syscall
+
 		ret
 
 	.print_c:
@@ -116,6 +130,7 @@ bprintf:
 		cmp	rax, 1
 		jne	.error
 
+		mov	rdx, 0
 		jmp 	.contin
 
 	.print_s:
@@ -129,7 +144,7 @@ bprintf:
 		cmp	rax, 0
 		jb	.error
 
-		mov	rdx, 1
+		mov	rdx, 0
 		inc	rsi
 		dec	rbx
 
