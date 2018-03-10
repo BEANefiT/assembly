@@ -4,7 +4,7 @@ section		.data
 
 
 
-	msg:	db	"Hello %sld", 10
+	msg:	db	"Hell%c %sld", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
@@ -19,8 +19,12 @@ start:
 	mov 	rsi, msg
 	mov 	rbx, msg.len
 
+	;mov	rax, 'l'
+	;push	rax
 	mov	rax, st
 	sub	rax, msg.len
+	push	rax
+	mov	rax, 'o'
 	push	rax
 
 	mov	rbp, rsp
@@ -105,18 +109,12 @@ bprintf:
 
 	.print_c:
 
-		push	rsi
 		call	print_c
-		pop	rsi
 
 		add	rbp, 8
 
 		cmp	rax, 1
 		jne	.error
-
-		mov 	rdx, 1
-		inc 	rsi
-		dec 	rbx
 
 		jmp 	.contin
 
@@ -143,9 +141,9 @@ bprintf:
 ; 				  ;
 ; |===========print_c===========| ;
 ; | Entry:			| ;
-; |	rdi <== output dest	| ;
+; |	rsi <= 'c' location	| ;
 ; | Destr:			| ;
-; |	rdx, rsi		| ;
+; |	-			| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -155,14 +153,8 @@ bprintf:
 	
 print_c:
 
-	mov 		rsi, buf
-	
 	mov		rax, [rbp]
-	mov		[rsi], rax
-	mov 		rdx, 1
-	mov 		rax, 0x2000004
-	syscall
-	mov byte	[rsi], '%'
+	mov byte	[rsi], al
 
 	mov 		rax, 1
 
