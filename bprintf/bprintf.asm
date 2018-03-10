@@ -4,12 +4,16 @@ section		.data
 
 
 
-	msg:	db	"Hell%c world", 10
+	msg:	db	"H%c%so%b %sld", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
 
+	sw:	db	"ll%"
+
 	err:	db	"rorerrorerrorerr1oerror", 10
+
+	buf:	times 33 db ' '
 
 section		.text
 
@@ -21,10 +25,16 @@ start:
 
 	;mov	rax, 'l'
 	;push	rax
-	;mov	rax, st
-	;sub	rax, msg.len
-	;push	rax
-	mov	rax, 'o'
+	mov	rax, st
+	sub	rax, msg.len
+	push	rax
+	mov	rax, 2
+	push	rax
+	mov	rax, sw
+	sub	rax, msg.len
+	sub	rax, 4
+	push	rax
+	mov	rax, 'e'
 	push	rax
 
 	mov	rbp, rsp
@@ -91,8 +101,8 @@ bprintf:
 		;	cmp rsi, 'x'
 		;	je .print_x
 
-		;	cmp rsi, 'b'
-		;	je .print_b
+			cmp byte	[rsi], 'b'
+			je		.print_b
 
 			jmp .error	; if incorrect letter after '%'
 			
@@ -137,6 +147,27 @@ bprintf:
 		
 		push	rsi
 		call	print_s
+		pop	rsi
+
+		add	rbp, 8
+
+		cmp	rax, 0
+		jb	.error
+
+		mov	rdx, 0
+		inc	rsi
+		dec	rbx
+
+		jmp	.contin
+
+	.print_b:
+
+		push	rsi
+		push	r9
+		push	r11
+		call	print_b
+		pop	r11
+		pop	r9
 		pop	rsi
 
 		add	rbp, 8
@@ -221,3 +252,65 @@ print_s:
 	ret
 
 ;*************************print_s******************************
+
+;---------------------------------;
+; 				  ;
+; |===========print_b===========| ;
+; | Entry:			| ;
+; |	rdi <== output dest	| ;
+; | Destr:			| ;
+; |	rdx, rsi, r9b, r11	| ;
+; | Ret:			| ;
+; | 	num of written symbs	| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+print_b:
+
+	mov	rsi, buf
+	sub	rsi, msg.len
+	sub	rsi, 31
+
+	mov	r11, [rbp]
+	mov	r9b, 0x20
+
+	.count:
+		
+		shl		r11, 1
+		jc		.setcount
+		dec		r9b
+		jmp		.count
+
+	.setcount:
+
+		mov		al, 0x20
+		sub		al, r9b
+		mov byte	[rsi], al
+		inc		rsi
+
+	.next:
+
+		shl		r11, 1
+		xor		al, al
+		adc		al, 0
+		mov byte	[rsi], al
+		inc		rsi
+		dec		r9b
+		cmp		r9b, 0
+		ja		.next
+
+	mov		rsi, buf
+	sub		rsi, 30
+	sub		rsi, msg.len
+	xor		dx, dx
+	mov byte	dh, [rsi - 1]
+	mov		rax, 0x2000004
+	push		rdx
+	syscall
+	pop		rdx
+
+	mov rax, rdx
+	ret
+
+;****************************print_b***********************************
