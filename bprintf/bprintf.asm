@@ -2,12 +2,14 @@ global start
 
 section		.data
 
-	msg:	db	"He%clo %c%sl%c", 10
+
+
+	msg:	db	"Hello %sld", 10
 	.len:	equ	$ - msg
 
-	str:	db	"or%"
+	st:	db	"wor%"
 
-	buf:	times 32 db '%'
+	buf	times 32 db '%'
 
 section		.text
 
@@ -17,13 +19,8 @@ start:
 	mov 	rsi, msg
 	mov 	rbx, msg.len
 
-	mov	rax, 'd'
-	push	rax
-	mov	rax, str
-	push	rax
-	mov	rax, 'w'
-	push	rax
-	mov	rax, 'l'
+	mov	rax, st
+	sub	rax, msg.len
 	push	rax
 
 	mov	rbp, rsp
@@ -75,7 +72,7 @@ bprintf:
 			je		.print_c
 
 			cmp byte	[rsi], 's'
-			je .print_s
+			je 		.print_s
 
 			cmp rsi, 'd'
 		;	je .print_d
@@ -126,7 +123,7 @@ bprintf:
 	.print_s:
 		
 		push	rsi
-		call	print_c
+		call	print_s
 		pop	rsi
 
 		add	rbp, 8
