@@ -4,7 +4,7 @@ section		.data
 
 
 
-	msg:	db	"H%c%so%o %sld%b", 10
+	msg:	db	"H%c%so%x %sld%b", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
@@ -28,7 +28,7 @@ start:
 	mov	rax, st
 	sub	rax, msg.len
 	push	rax
-	mov	rax, 0xce
+	mov	rax, 0xcef
 	push	rax
 	mov	rax, sw
 	sub	rax, msg.len
@@ -98,8 +98,8 @@ bprintf:
 			cmp byte	[rsi], 'o'
 			je		.print_o
 
-		;	cmp rsi, 'x'
-		;	je .print_x
+			cmp byte	[rsi], 'x'
+			je		.print_x
 
 			cmp byte	[rsi], 'b'
 			je		.print_b
@@ -188,6 +188,29 @@ bprintf:
 		push	r13
 		push	r14
 		call	print_o
+		pop	r14
+		pop	r13
+		pop	r12
+		pop	rsi
+
+		add	rbp, 8
+
+		cmp	rax, 0
+		jb	.error
+
+		mov	rdx, 0
+		inc	rsi
+		dec	rbx
+
+		jmp	.contin
+
+	.print_x:
+
+		push	rsi
+		push	r12
+		push	r13
+		push	r14
+		call	print_x
 		pop	r14
 		pop	r13
 		pop	r12
@@ -318,7 +341,7 @@ print_b:
 
 		xor		al, al
 		shl		r11, 1
-		adc		al, 0x30
+		adc		al, '0'
 		mov byte	[rsi], al
 		inc		rsi
 		dec		r9b
@@ -384,7 +407,7 @@ print_o:
 				
 	.contin:
 
-		add		r13, 0x30
+		add		r13, '0'
 		mov byte	[rsi], r13b
 		inc		rdx
 		cmp		r14, 0
@@ -402,7 +425,79 @@ print_o:
 		mov	rax, rdx
 		ret
 
-;*******************************print_o*********************************8
+;*******************************print_o**********************************
+
+;---------------------------------;
+; 				  ;
+; |===========print_x===========| ;
+; | Entry:			| ;
+; |	rdi <== output dest	| ;
+; | Destr:			| ;
+; |	rsi, r12, rdx, r13, r14	| ;
+; | Ret:			| ;
+; | 	num of written symbs	| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+print_x:
+
+	mov	rsi, buf
+	sub	rsi, msg.len
+	dec	rsi
+
+	mov	r14, [rbp]
+
+	mov	rdx, 0
+
+	.block:
+
+		xor	r12, r12
+		xor	r13, r13
+
+		.next:
+
+			xor	rax, rax
+			shr	r14, 1
+			adc	rax, 0
+			push	r12
+			call	pow
+			pop	r12
+			add	r13, rax
+			inc	r12
+			cmp	r12, 3
+			ja	.contin
+			jmp	.next
+				
+	.contin:
+
+		cmp		r13, 0xa
+		jae		.letter
+		add		r13, '0'
+		jmp		.putc
+
+		.letter:
+			add	r13, 'a' - 0xa
+		
+		.putc:
+			mov byte	[rsi], r13b
+			inc		rdx
+			cmp		r14, 0
+			je		.ret
+			dec		rsi
+			jmp		.block
+
+	.ret:
+
+		mov 	rax, 0x2000004
+		push	rdx
+		syscall
+		pop	rdx
+
+		mov	rax, rdx
+		ret
+
+;*******************************print_x**********************************
 
 ;---------------------------------;
 ; 				  ;
