@@ -4,7 +4,7 @@ section		.data
 
 
 
-	msg:	db	"H%c%so%b %sld%b", 10
+	msg:	db	"H%c%so%o %sld%b", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
@@ -23,9 +23,7 @@ start:
 	mov 	rsi, msg
 	mov 	rbx, msg.len
 
-	;mov	rax, 'l'
-	;push	rax
-	mov	rax, 0xf
+	mov	rax, 0xfffffffffffffffe
 	push	rax
 	mov	rax, st
 	sub	rax, msg.len
@@ -97,8 +95,8 @@ bprintf:
 		;	cmp rsi, 'd'
 		;	je .print_d
 
-		;	cmp rsi, 'o'
-		;	je .print_o
+			cmp byte	[rsi], 'o'
+			je		.print_o
 
 		;	cmp rsi, 'x'
 		;	je .print_x
@@ -170,6 +168,29 @@ bprintf:
 		call	print_b
 		pop	r11
 		pop	r9
+		pop	rsi
+
+		add	rbp, 8
+
+		cmp	rax, 0
+		jb	.error
+
+		mov	rdx, 0
+		inc	rsi
+		dec	rbx
+
+		jmp	.contin
+
+	.print_o:
+
+		push	rsi
+		push	r12
+		push	r13
+		push	r14
+		call	print_o
+		pop	r14
+		pop	r13
+		pop	r12
 		pop	rsi
 
 		add	rbp, 8
@@ -276,11 +297,11 @@ print_b:
 
 	mov	r11, [rbp]
 
-	mov	r9b, 0x20
+	mov	r9b, 0x40
 
 	.count:
 		
-		shl		r11d, 1
+		shl		r11, 1
 		dec		r9b
 		jc		.setcount
 		jmp		.count
@@ -296,7 +317,7 @@ print_b:
 	.next:
 
 		xor		al, al
-		shl		r11d, 1
+		shl		r11, 1
 		adc		al, 0x30
 		mov byte	[rsi], al
 		inc		rsi
@@ -318,3 +339,100 @@ print_b:
 	ret
 
 ;****************************print_b***********************************
+
+;---------------------------------;
+; 				  ;
+; |===========print_o===========| ;
+; | Entry:			| ;
+; |	rdi <== output dest	| ;
+; | Destr:			| ;
+; |	rsi, r14, rdx, r12, r13	| ;
+; | Ret:			| ;
+; | 	num of written symbs	| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+print_o:
+
+	mov	rsi, buf
+	sub	rsi, msg.len
+
+	mov	r14, [rbp]
+
+	mov	rdx, 0
+
+	.block:
+
+		xor	r12, r12
+		xor	r13, r13
+
+		.next:
+
+			xor	rax, rax
+			shr	r14, 1
+			adc	rax, 0
+			push	r12
+			call	pow
+			pop	r12
+			add	r13, rax
+			inc	r12
+			cmp	r12, 2
+			ja	.contin
+			jmp	.next
+				
+	.contin:
+
+		add		r13, 0x30
+		mov byte	[rsi], r13b
+		cmp		r14, 0
+		je		.ret
+		dec		rsi
+		inc		rdx
+		jmp		.block
+
+	.ret:
+
+		mov 	rax, 0x2000004
+		push	rdx
+		syscall
+		pop	rdx
+
+		mov	rax, rdx
+		ret
+
+;*******************************print_o*********************************8
+
+;---------------------------------;
+; 				  ;
+; |=============pow=============| ;
+; | Entry:			| ;
+; |	r12 <== power		| ;
+; |	rax <== num		| ;
+; | Destr:			| ;
+; |	r12			| ;
+; | Ret:			| ;
+; | 	pow (rax, r12)		| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+pow:
+
+	.contin:
+
+		dec	r12
+		cmp	r12, 0
+		jae	.next
+		jmp	.ret
+
+	.next:
+	
+		shl	rax, 1
+		jmp	.contin
+
+	.ret:
+
+		ret
+
+;**************************pow**************************
