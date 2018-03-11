@@ -4,7 +4,7 @@ section		.data
 
 
 
-	msg:	db	"H%c%so%x %sld%b", 10
+	msg:	db	"H%c%so %d %sld%b", 10
 	.len:	equ	$ - msg
 
 	st:	db	"wor%"
@@ -28,7 +28,7 @@ start:
 	mov	rax, st
 	sub	rax, msg.len
 	push	rax
-	mov	rax, 0xcef
+	mov	rax, 0x20
 	push	rax
 	mov	rax, sw
 	sub	rax, msg.len
@@ -92,8 +92,8 @@ bprintf:
 			cmp byte	[rsi], 's'
 			je 		.print_s
 
-		;	cmp rsi, 'd'
-		;	je .print_d
+			cmp byte	[rsi], 'd'
+			je 		.print_d
 
 			cmp byte	[rsi], 'o'
 			je		.print_o
@@ -147,6 +147,27 @@ bprintf:
 		
 		push	rsi
 		call	print_s
+		pop	rsi
+
+		add	rbp, 8
+
+		cmp	rax, 0
+		jb	.error
+
+		mov	rdx, 0
+		inc	rsi
+		dec	rbx
+
+		jmp	.contin
+
+	.print_d:
+
+		push	rsi
+		push	r9
+		push	r10
+		call	print_d
+		pop	r10
+		pop	r9
 		pop	rsi
 
 		add	rbp, 8
@@ -444,7 +465,6 @@ print_x:
 
 	mov	rsi, buf
 	sub	rsi, msg.len
-	dec	rsi
 
 	mov	r14, [rbp]
 
@@ -498,6 +518,53 @@ print_x:
 		ret
 
 ;*******************************print_x**********************************
+
+;---------------------------------;
+; 				  ;
+; |===========print_d===========| ;
+; | Entry:			| ;
+; |	rdi <== output dest	| ;
+; | Destr:			| ;
+; |	rsi, rdx, r9, r10	| ;
+; | Ret:			| ;
+; | 	num of written symbs	| ;
+; |=============================| ;
+;				  ;
+;---------------------------------;
+
+print_d:
+
+	mov	rsi, buf
+	sub	rsi, msg.len
+
+	mov	rax, [rbp]
+
+	mov	r9, 0
+	mov	r10, 10
+
+	.next:
+		
+		xor		rdx, rdx
+		div		r10
+		add		rdx, '0'
+		dec		rsi
+		mov byte	[rsi], dl
+		inc		r9
+		cmp		rax, 0
+		ja		.next
+
+	mov	rax, 0x2000004
+	mov	rdx, r9
+	syscall
+
+	mov	rax, r9
+	ret
+
+;***************************print_d*******************************
+
+
+
+
 
 ;---------------------------------;
 ; 				  ;
