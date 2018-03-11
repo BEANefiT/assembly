@@ -31,7 +31,7 @@ section		.data
 
 
 
-	msg:			db	"H%c%so %x %sld%b", 10
+	msg:			db	"H%c%so %o %sld%b", 10
 	.len:			equ	$ - msg
 
 	st:			db	"wor%"
@@ -57,7 +57,7 @@ start:
 	mov	rax, st
 	sub	rax, msg.len
 	push	rax
-	mov	rax, 0x20
+	mov	rax, 0xbeda
 	push	rax
 	mov	rax, sw
 	sub	rax, msg.len
@@ -492,10 +492,6 @@ print_d:
 	ret
 
 ;***************************print_d*******************************
-
-
-
-
 
 ;---------------------------------;
 ; 				  ;
