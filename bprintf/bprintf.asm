@@ -52,15 +52,19 @@ _bprintf:
 
 	reg_to_stack push
 
+	push	rax
+
 	mov 	rsi, rdi
 	mov 	rdi, 1
-
+	
 	mov	rbp, rsp
+	add	rbp, 8
 	call 	bprint
 
+	pop	rax
 	reg_to_stack pop
-
 	push	rax
+
 	xor 	rdi, rdi
 	mov 	rax, 0x2000001
 	syscall
@@ -92,7 +96,7 @@ bprint:
 		je		.ret
 
 	
-		add 		rbx, 0xf00		; return value in 'bh'
+		add 		rbx, 0x1		; return value in 'bh'
 		inc		rdx			; parameter of 0x2000004 syscall
 		jmp 		.next
 
@@ -124,8 +128,6 @@ bprint:
 
 		mov	rax, __UNIX_write_syscall__
 		syscall
-
-		shr rbx, 8					; get return value from 'bh'
 
 		mov rax, rbx					; bprintf rets written value
 		ret

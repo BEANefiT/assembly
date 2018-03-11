@@ -4,9 +4,9 @@ int main()
 {
 	char*	str = "Здарова";
 	char	c = 'l';
-	int	a = 0xeda;
+	unsigned long long	a = 0xeda;
 
-	bprintf ("%s, wor%cd!\nbin = %b\noct = %o\ndec = %d\nlove = %x\n", str, c, a, a, a, a);
+	bprintf ("%x\n%x\n%x\n%x\n%x\n%x\n%x\n%x\n\0", a, a, a, a, a, a, a, a);
 	
 	return 0;
 }
