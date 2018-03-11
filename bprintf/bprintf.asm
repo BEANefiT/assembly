@@ -28,7 +28,7 @@ start:
 	mov	rax, st
 	sub	rax, msg.len
 	push	rax
-	mov	rax, 0x5
+	mov	rax, 0xce
 	push	rax
 	mov	rax, sw
 	sub	rax, msg.len
@@ -346,7 +346,7 @@ print_b:
 ; | Entry:			| ;
 ; |	rdi <== output dest	| ;
 ; | Destr:			| ;
-; |	rsi, r14, rdx, r12, r13	| ;
+; |	rsi, r12, rdx, r13, r14	| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -357,6 +357,7 @@ print_o:
 
 	mov	rsi, buf
 	sub	rsi, msg.len
+	dec	rsi
 
 	mov	r14, [rbp]
 
@@ -385,10 +386,10 @@ print_o:
 
 		add		r13, 0x30
 		mov byte	[rsi], r13b
+		inc		rdx
 		cmp		r14, 0
 		je		.ret
 		dec		rsi
-		inc		rdx
 		jmp		.block
 
 	.ret:
@@ -421,13 +422,13 @@ pow:
 
 	.contin:
 
-		dec	r12
 		cmp	r12, 0
-		jae	.next
+		ja	.next
 		jmp	.ret
 
 	.next:
 	
+		dec	r12
 		shl	rax, 1
 		jmp	.contin
 
