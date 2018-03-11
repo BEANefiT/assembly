@@ -1,19 +1,48 @@
 global start
 
+%macro det_sym 2				; macro determines symb after '%'
+	
+	cmp byte	[rsi], %1
+	je		%2
+
+%endmacro
+
+%macro	print_call 1				; macro calls print_% funcs
+
+	push	rsi
+	call	%1
+	pop	rsi
+
+	add	rbp, 8
+
+	cmp	rax, 0
+	jb	.error
+
+	mov	rdx, 0
+	inc	rsi
+	dec	rbx
+
+	jmp	.contin
+
+%endmacro
+
+
 section		.data
 
 
 
-	msg:	db	"H%c%so %d %sld%b", 10
-	.len:	equ	$ - msg
+	msg:			db	"H%c%so %x %sld%b", 10
+	.len:			equ	$ - msg
 
-	st:	db	"wor%"
+	st:			db	"wor%"
 
-	sw:	db	"ll%"
+	sw:			db	"ll%"
 
-	err:	db	"rorerrorerrorerr1oerror", 10
+	err:			db	"rorerrorerrorerr1oerror", 10
 
-	buf:	times 32 db '%'
+	buf:			times 32 db '%'
+
+	__UNIX_write_syscall__	equ	0x2000004
 
 section		.text
 
@@ -39,8 +68,8 @@ start:
 
 	mov	rbp, rsp
 	call 	bprintf
-	mov 	rax, 0x2000001
 	xor 	rdi, rdi
+	mov 	rax, 0x2000001
 	syscall
 
 
@@ -61,70 +90,64 @@ start:
 
 bprintf:
 
-	mov 		rdx, 0
+	mov 		rdx, 0				; parameter of 0x2000004 syscall
 	.next:
 
 		cmp byte	[rsi + rdx], '%'	; checking for '%' symb
 		je 		.printstack
 
 	
-		dec 		rbx
-		add 		rbx, 0xf00
-		inc		rdx
+		dec 		rbx			; we checked 1 symb
+		add 		rbx, 0xf00		; return value in 'bh'
+		inc		rdx			; parameter of 0x2000004 syscall
 		jmp 		.contin
 
 		.printstack:
 			
-			mov	rax, 0x2000004
-			push	rdx
+			push	rdx			; write str until '%'
+			mov	rax, __UNIX_write_syscall__
 			syscall
 			pop	rdx
 
-			inc	rsi
-			add	rsi, rdx
-			dec 	rbx
+			inc	rsi			; skip '%'
+			dec 	rbx			; skip '%'
+			add	rsi, rdx		; now just a part of prev str
 			cmp 	bl, 0
-			je 	.error	; if no letter after '%' symb
+			je 	.error			; if no letter after '%' symb
 
-			cmp byte	[rsi], 'c'
-			je		.print_c
+			det_sym		'c', .print_c
 
-			cmp byte	[rsi], 's'
-			je 		.print_s
+			det_sym		's', .print_s
 
-			cmp byte	[rsi], 'd'
-			je 		.print_d
+			det_sym		'd', .print_d
 
-			cmp byte	[rsi], 'o'
-			je		.print_o
+			det_sym		'o', .print_o
 
-			cmp byte	[rsi], 'x'
-			je		.print_x
+			det_sym		'x', .print_x
 
-			cmp byte	[rsi], 'b'
-			je		.print_b
+			det_sym		'b', .print_b
 
-			jmp .error	; if incorrect letter after '%'
+			jmp .error			; if incorrect letter after '%'
 			
 
 		.contin:
 		
-			cmp bl, 0
+			cmp bl, 0			; end of str
 			jne .next
 	
-	shr rbx, 8
+	shr rbx, 8					; get return value from 'bh'
 
-	mov rax, 0x2000004
+	mov rax, __UNIX_write_syscall__			; write end of str
 	syscall 
 
-	mov rax, rbx			; bprintf rets written value
+	mov rax, rbx					; bprintf rets written value
 	ret
 
 	.error:
 
 		mov rax, 0xffffffff	; ret (-1)
 
-		mov	rax, 0x2000004
+		mov	rax, __UNIX_write_syscall__
 		mov	rdx, 6
 		mov	rsi, err
 		syscall
@@ -132,121 +155,22 @@ bprintf:
 		ret
 
 	.print_c:
-
-		call	print_c
-
-		add	rbp, 8
-
-		cmp	rax, 1
-		jne	.error
-
-		mov	rdx, 0
-		jmp 	.contin
-
-	.print_s:
+		print_call	print_c
 		
-		push	rsi
-		call	print_s
-		pop	rsi
-
-		add	rbp, 8
-
-		cmp	rax, 0
-		jb	.error
-
-		mov	rdx, 0
-		inc	rsi
-		dec	rbx
-
-		jmp	.contin
+	.print_s:
+		print_call	print_s
 
 	.print_d:
-
-		push	rsi
-		push	r9
-		push	r10
-		call	print_d
-		pop	r10
-		pop	r9
-		pop	rsi
-
-		add	rbp, 8
-
-		cmp	rax, 0
-		jb	.error
-
-		mov	rdx, 0
-		inc	rsi
-		dec	rbx
-
-		jmp	.contin
+		print_call	print_d
 
 	.print_b:
-
-		push	rsi
-		push	r9
-		push	r11
-		call	print_b
-		pop	r11
-		pop	r9
-		pop	rsi
-
-		add	rbp, 8
-
-		cmp	rax, 0
-		jb	.error
-
-		mov	rdx, 0
-		inc	rsi
-		dec	rbx
-
-		jmp	.contin
+		print_call	print_b
 
 	.print_o:
-
-		push	rsi
-		push	r12
-		push	r13
-		push	r14
-		call	print_o
-		pop	r14
-		pop	r13
-		pop	r12
-		pop	rsi
-
-		add	rbp, 8
-
-		cmp	rax, 0
-		jb	.error
-
-		mov	rdx, 0
-		inc	rsi
-		dec	rbx
-
-		jmp	.contin
+		print_call	print_o
 
 	.print_x:
-
-		push	rsi
-		push	r12
-		push	r13
-		push	r14
-		call	print_x
-		pop	r14
-		pop	r13
-		pop	r12
-		pop	rsi
-
-		add	rbp, 8
-
-		cmp	rax, 0
-		jb	.error
-
-		mov	rdx, 0
-		inc	rsi
-		dec	rbx
-
-		jmp	.contin
+		print_call	print_x
 
 ;************************bprintf******************************
 
@@ -254,7 +178,7 @@ bprintf:
 ; 				  ;
 ; |===========print_c===========| ;
 ; | Entry:			| ;
-; |	rsi <= 'c' location	| ;
+; |	rdi <= output dest	| ;
 ; | Destr:			| ;
 ; |	-			| ;
 ; | Ret:			| ;
@@ -265,12 +189,19 @@ bprintf:
 
 	
 print_c:
+	
+	mov	rsi, buf
+	sub	rsi, msg.len
+	sub	rsi, 0x1f
 
 	mov		rax, [rbp]
 	mov byte	[rsi], al
 
-	mov 		rax, 1
+	mov		rax, __UNIX_write_syscall__
+	mov		rdx, 1
+	syscall
 
+	mov 		rax, 1
 	ret
 
 ;**********************print_c********************************
@@ -311,7 +242,7 @@ print_s:
 
 .contin:
 		
-	mov	rax, 0x2000004
+	mov	rax, __UNIX_write_syscall__
 	syscall
 
 	mov	rax, rdx
@@ -339,13 +270,13 @@ print_b:
 	sub	rsi, msg.len
 	sub	rsi, 0x1f
 
-	mov	r11, [rbp]
+	mov	r10, [rbp]
 
 	mov	r9b, 0x40
 
 	.count:
 		
-		shl		r11, 1
+		shl		r10, 1
 		dec		r9b
 		jc		.setcount
 		jmp		.count
@@ -361,7 +292,7 @@ print_b:
 	.next:
 
 		xor		al, al
-		shl		r11, 1
+		shl		r10, 1
 		adc		al, '0'
 		mov byte	[rsi], al
 		inc		rsi
@@ -374,7 +305,7 @@ print_b:
 	sub		rsi, msg.len
 	xor		dx, dx
 	mov byte	dl, r12b
-	mov		rax, 0x2000004
+	mov		rax, __UNIX_write_syscall__
 	push		rdx
 	syscall
 	pop		rdx
@@ -438,7 +369,7 @@ print_o:
 
 	.ret:
 
-		mov 	rax, 0x2000004
+		mov 	rax, __UNIX_write_syscall__
 		push	rdx
 		syscall
 		pop	rdx
@@ -509,7 +440,7 @@ print_x:
 
 	.ret:
 
-		mov 	rax, 0x2000004
+		mov 	rax, __UNIX_write_syscall__
 		push	rdx
 		syscall
 		pop	rdx
@@ -553,7 +484,7 @@ print_d:
 		cmp		rax, 0
 		ja		.next
 
-	mov	rax, 0x2000004
+	mov	rax, __UNIX_write_syscall__
 	mov	rdx, r9
 	syscall
 
