@@ -18,9 +18,9 @@ global _bprintf
 	cmp	rax, 0
 	jb	.error
 
-	mov	rdx, 0
+	add	rbx, rax
+	xor	rdx, rdx
 	inc	rsi
-	dec	rbx
 
 	jmp	.next
 
@@ -48,11 +48,11 @@ section		.text
 
 _bprintf:
 
-	pop	rax
+	pop	rbx
 
 	reg_to_stack push
 
-	push	rax
+	push	rbx
 
 	mov 	rsi, rdi
 	mov 	rdi, 1
@@ -61,13 +61,12 @@ _bprintf:
 	add	rbp, 8
 	call 	bprint
 
-	pop	rax
+	pop	rbx
 	reg_to_stack pop
-	push	rax
+	push	rbx
 
 	xor 	rdi, rdi
-	mov 	rax, 0x2000001
-	syscall
+	ret
 
 
 ;---------------------------------;
@@ -86,7 +85,8 @@ _bprintf:
 
 bprint:
 
-	mov 		rdx, 0				; parameter of 0x2000004 syscall
+	xor 		rdx, rdx			; parameter of 0x2000004 syscall
+	xor		rbx, rbx
 	.next:
 
 		cmp byte	[rsi + rdx], '%'	; checking for '%' symb
@@ -96,19 +96,25 @@ bprint:
 		je		.ret
 
 	
-		add 		rbx, 0x1		; return value in 'bh'
+		add 		rbx, 1		; return value in 'bh'
 		inc		rdx			; parameter of 0x2000004 syscall
 		jmp 		.next
 
 		.printstack:
 			
+			cmp	rdx, 0
+			je 	.empty
+
 			push	rdx			; write str until '%'
 			mov	rax, __UNIX_write_syscall__
 			syscall
 			pop	rdx
-
+		.empty:
 			inc	rsi			; skip '%'
 			add	rsi, rdx		; now just a part of prev str
+			xor	rdx, rdx
+
+			det_sym		'%', .printstack
 
 			det_sym		'c', .print_c
 
@@ -164,7 +170,7 @@ bprint:
 ; | Entry:			| ;
 ; |	rdi <= output dest	| ;
 ; | Destr:			| ;
-; |	-			| ;
+; |	rsi, rdx		| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -183,7 +189,6 @@ print_c:
 	mov		rdx, 1
 	syscall
 
-	mov 		rax, 1
 	ret
 
 ;**********************print_c********************************
@@ -194,7 +199,7 @@ print_c:
 ; | Entry:			| ;
 ; |	rdi <== output dest	| ;
 ; | Destr:			| ;
-; |	rdx, rsi		| ;
+; |	rdx, rsi, rbx		| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -203,31 +208,23 @@ print_c:
 
 print_s:
 	
-	mov	rdx, 0
+	xor	rdx, rdx
 	mov	rsi, [rbp]
 
 	.next:
 
-		cmp byte	[rsi + rdx], '%'
+		cmp byte	[rsi + rdx], 0
 		je		.contin
-
-		cmp byte	[rsi + rdx], '\'
-		je		.exptn
 
 		inc		rdx
 		jmp		.next
 
-	.exptn:
-
-		times 2 inc	rdx
-		jmp 		.next
-
 .contin:
 		
+	push	rdx
 	mov	rax, __UNIX_write_syscall__
 	syscall
-
-	mov	rax, rdx
+	pop	rdx
 
 	ret
 
@@ -281,14 +278,11 @@ print_b:
 		ja		.next
 
 	mov		rsi, buf
-	xor		dx, dx
+	xor		rdx, rdx
 	mov byte	dl, r12b
 	mov		rax, __UNIX_write_syscall__
-	push		rdx
 	syscall
-	pop		rdx
 
-	mov rax, rdx
 	ret
 
 ;****************************print_b***********************************
@@ -347,11 +341,8 @@ print_o:
 	.ret:
 
 		mov 	rax, __UNIX_write_syscall__
-		push	rdx
 		syscall
-		pop	rdx
 
-		mov	rax, rdx
 		ret
 
 ;*******************************print_o**********************************
@@ -418,11 +409,8 @@ print_x:
 	.ret:
 
 		mov 	rax, __UNIX_write_syscall__
-		push	rdx
 		syscall
-		pop	rdx
 
-		mov	rax, rdx
 		ret
 
 ;*******************************print_x**********************************
@@ -465,7 +453,6 @@ print_d:
 	mov	rdx, r9
 	syscall
 
-	mov	rax, r9
 	ret
 
 ;***************************print_d*******************************

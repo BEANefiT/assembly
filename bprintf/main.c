@@ -1,12 +1,12 @@
-void	bprintf (char* msg, ...);
+int	bprintf (char* msg, ...);
 
 int main()
 {
-	char*	str = "Здарова";
-	char	c = 'l';
-	unsigned long long	a = 0xeda;
+	char*	str = "comes";
+	char	c = '1';
+	unsigned long long	a = 48858;
 
-	bprintf ("%x\n%x\n%x\n%x\n%x\n%x\n%x\n%x\n\0", a, a, a, a, a, a, a, a);
+	bprintf ("%d\n", bprintf ("%x not %s %c\n",a, str, c) );
 	
 	return 0;
 }
