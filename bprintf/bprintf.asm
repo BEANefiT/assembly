@@ -40,32 +40,31 @@ global _bprintf
 
 section		.data
 
-	buf:			times 32 db '%'
+	buf:			times 32 db '%'		; buffer
 
-	__UNIX_write_syscall__	equ	0x2000004
+	__UNIX_write_syscall__	equ	0x2000004	; 0x04 syscall
 
 section		.text
 
 _bprintf:
 
-	pop	rbx
+	pop	rbx					; ret addr of main()
 
-	reg_to_stack push
+	reg_to_stack push				; all params -> stack
 
-	push	rbx
+	push	rbx					; push ret of main()
 
-	mov 	rsi, rdi
-	mov 	rdi, 1
+	mov 	rsi, rdi				; string ptr from main.c
+	mov 	rdi, 1					; stdout
 	
 	mov	rbp, rsp
 	add	rbp, 8
 	call 	bprint
 
-	pop	rbx
+	pop	rbx					; clean stack, care about ret addr
 	reg_to_stack pop
 	push	rbx
 
-	xor 	rdi, rdi
 	ret
 
 
@@ -86,23 +85,23 @@ _bprintf:
 bprint:
 
 	xor 		rdx, rdx			; parameter of 0x2000004 syscall
-	xor		rbx, rbx
+	xor		rbx, rbx			; ret value
 	.next:
 
 		cmp byte	[rsi + rdx], '%'	; checking for '%' symb
 		je 		.printstack
 
-		cmp byte	[rsi + rdx], 0
+		cmp byte	[rsi + rdx], 0		; end of str
 		je		.ret
 
 	
-		add 		rbx, 1		; return value in 'bh'
+		add 		rbx, 1			; return value in 'bh'
 		inc		rdx			; parameter of 0x2000004 syscall
 		jmp 		.next
 
 		.printstack:
 			
-			cmp	rdx, 0
+			cmp	rdx, 0			; don't call syscall with !rdx
 			je 	.empty
 
 			push	rdx			; write str until '%'
@@ -114,7 +113,7 @@ bprint:
 			add	rsi, rdx		; now just a part of prev str
 			xor	rdx, rdx
 
-			det_sym		'%', .printstack
+			det_sym		'%', .printstack ;%% -> %
 
 			det_sym		'c', .print_c
 
@@ -132,15 +131,15 @@ bprint:
 
 	.ret:
 
-		mov	rax, __UNIX_write_syscall__
+		mov	rax, __UNIX_write_syscall__	; write end of line
 		syscall
 
-		mov rax, rbx					; bprintf rets written value
+		mov rax, rbx				; bprintf rets written value
 		ret
 
 	.error:
 
-		mov rax, 0xffffffff	; ret (-1)
+		mov rax, 0xffffffff			; ret (-1)
 
 		ret
 
@@ -180,10 +179,10 @@ bprint:
 	
 print_c:
 	
-	mov		rsi, buf
+	mov		rsi, buf			; get buf addr
 
-	mov		rax, [rbp]
-	mov byte	[rsi], al
+	mov		rax, [rbp]			; get symb from stack
+	mov byte	[rsi], al			; put symb to buf
 
 	mov		rax, __UNIX_write_syscall__
 	mov		rdx, 1
@@ -208,12 +207,12 @@ print_c:
 
 print_s:
 	
-	xor	rdx, rdx
-	mov	rsi, [rbp]
+	xor	rdx, rdx				; counter of str chars
+	mov	rsi, [rbp]				; get str addr
 
 	.next:
 
-		cmp byte	[rsi + rdx], 0
+		cmp byte	[rsi + rdx], 0		; look for end of str
 		je		.contin
 
 		inc		rdx
@@ -221,10 +220,8 @@ print_s:
 
 .contin:
 		
-	push	rdx
 	mov	rax, __UNIX_write_syscall__
 	syscall
-	pop	rdx
 
 	ret
 
@@ -245,41 +242,41 @@ print_s:
 
 print_b:
 
-	mov	rsi, buf
+	mov	rsi, buf				; get buf addr
 
-	mov	r10, [rbp]
+	mov	r10, [rbp]				; get number
 
-	mov	r9b, 0x40
+	mov	r9b, 0x40				; max length of bin 64 bit number
 
 	.count:
 		
-		shl		r10, 1
+		shl		r10, 1			; delete first zeroes
 		dec		r9b
 		jc		.setcount
 		jmp		.count
 
 	.setcount:
 
-		mov byte	[rsi], 0x31
+		mov byte	[rsi], '1'		; don't forget first deleted '1'
 		inc		rsi
 
-		mov byte	r12b, r9b
+		mov byte	r12b, r9b		; save number length
 		inc		r12b
 
 	.next:
 
 		xor		al, al
-		shl		r10, 1
+		shl		r10, 1			; get digit
 		adc		al, '0'
-		mov byte	[rsi], al
+		mov byte	[rsi], al		; put digit in buf
 		inc		rsi
 		dec		r9b
-		cmp		r9b, 0
+		cmp		r9b, 0			; end of number
 		ja		.next
 
-	mov		rsi, buf
+	mov		rsi, buf			; put buf addr
 	xor		rdx, rdx
-	mov byte	dl, r12b
+	mov byte	dl, r12b			; length of num
 	mov		rax, __UNIX_write_syscall__
 	syscall
 
@@ -302,38 +299,38 @@ print_b:
 
 print_o:
 
-	mov	rsi, buf
+	mov	rsi, buf			; put buf addr
 	add	rsi, 0x1e
 
-	mov	r14, [rbp]
+	mov	r14, [rbp]			; get num
 
-	mov	rdx, 0
+	xor	rdx, rdx			; length of num
 
 	.block:
 
-		xor	r12, r12
-		xor	r13, r13
+		xor	r12, r12		; current power of block
+		xor	r13, r13		; current value of block
 
 		.next:
 
-			xor	rax, rax
+			xor	rax, rax	; current digit value
 			shr	r14, 1
 			adc	rax, 0
 			push	r12
-			call	pow
+			call	pow		; rax^r12
 			pop	r12
 			add	r13, rax
 			inc	r12
-			cmp	r12, 2
+			cmp	r12, 2		; end of block
 			ja	.contin
 			jmp	.next
 				
 	.contin:
 
-		add		r13, '0'
+		add		r13, '0'	; value of block
 		mov byte	[rsi], r13b
 		inc		rdx
-		cmp		r14, 0
+		cmp		r14, 0		; end of num
 		je		.ret
 		dec		rsi
 		jmp		.block
@@ -362,35 +359,35 @@ print_o:
 
 print_x:
 
-	mov	rsi, buf
-	add	rsi, 0x1e
+	mov	rsi, buf			; put buf addr
+	add	rsi, 0x1e			; leave space in the head of buff
 
-	mov	r14, [rbp]
+	mov	r14, [rbp]			; get num
 
-	mov	rdx, 0
+	xor	rdx, rdx
 
 	.block:
 
-		xor	r12, r12
-		xor	r13, r13
+		xor	r12, r12		; current power of block
+		xor	r13, r13		; current value of block
 
 		.next:
 
-			xor	rax, rax
+			xor	rax, rax	; current value of digit
 			shr	r14, 1
 			adc	rax, 0
 			push	r12
-			call	pow
+			call	pow		; rax^r12
 			pop	r12
 			add	r13, rax
 			inc	r12
-			cmp	r12, 3
+			cmp	r12, 3		; end of block
 			ja	.contin
 			jmp	.next
 				
 	.contin:
 
-		cmp		r13, 0xa
+		cmp		r13, 0xa	; 'a' != a + '0'
 		jae		.letter
 		add		r13, '0'
 		jmp		.putc
@@ -399,7 +396,7 @@ print_x:
 			add	r13, 'a' - 0xa
 		
 		.putc:
-			mov byte	[rsi], r13b
+			mov byte	[rsi], r13b ; put %x digit to buff
 			inc		rdx
 			cmp		r14, 0
 			je		.ret
@@ -430,23 +427,23 @@ print_x:
 
 print_d:
 
-	mov	rsi, buf
-	add	rsi, 0x1e
+	mov	rsi, buf			; put buf addr
+	add	rsi, 0x1e			; leave space in the head of buf
 
-	mov	rax, [rbp]
+	mov	rax, [rbp]			; get num
 
-	xor	r9, r9
-	mov	r10, 10
+	xor	r9, r9				; length of %d num
+	mov	r10, 10				; diviver))
 
 	.next:
 		
-		xor		rdx, rdx
+		xor		rdx, rdx	; rdx:rax/r10
 		div		r10
-		add		rdx, '0'
+		add		rdx, '0'	; rdx - reminder after div
 		dec		rsi
-		mov byte	[rsi], dl
+		mov byte	[rsi], dl	; put %d digit into buf
 		inc		r9
-		cmp		rax, 0
+		cmp		rax, 0		; end of num
 		ja		.next
 
 	mov	rax, __UNIX_write_syscall__
@@ -471,7 +468,7 @@ print_d:
 ;				  ;
 ;---------------------------------;
 
-pow:
+pow:					; mov cx, r12 -->  rep shl rax, 1
 
 	.contin:
 
