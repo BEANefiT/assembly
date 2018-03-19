@@ -17,6 +17,7 @@ section		.data
 
 	buf:		times 32 db '%'		; buffer
 	.len:		equ	$ - buf	
+	
 	hex:		db	"0123456789abcdef"
 
 	__UNIX_write_syscall__	equ	0x2000004	; 0x04 syscall
@@ -114,7 +115,19 @@ bprint:
 
 %endmacro
 
-			;det_sym		'%', .printstack ;%% -> %
+			cmp byte	[rsi], '%'
+			jne		.next_printproc
+			push		rsi
+			call		printproc
+			pop		rsi
+			add		rbx, rax
+			xor		rdx, rdx
+			inc rsi
+
+			jmp		.next
+
+		.next_printproc:
+			det_sym		'%', .printstack
 
 			det_sym		'c', print_c
 
@@ -414,3 +427,20 @@ print_d:
 ; |=============================| ;
 ;				  ;
 ;---------------------------------;
+
+printproc:
+	
+	mov		rsi, buf			; get buf addr
+
+	mov byte	al, '%'				; get symb from stack
+	mov byte	[rsi], al			; put symb to buf
+
+	mov		rax, __UNIX_write_syscall__
+	mov		rdx, 1
+	syscall
+
+	ret
+
+;**********************print_c********************************
+
+
