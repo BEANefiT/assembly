@@ -1,31 +1,6 @@
+; nasm -f macho64 bprintf.asm  && gcc -c main.c  && gcc -Wl,-no_pie bprintf.o main.o -o a.out
 global _bprintf
 
-%macro det_sym 2				; macro determines symb after '%'
-	
-	cmp byte	[rsi], %1
-	je		%2
-
-%endmacro
-
-%macro	print_call 1				; macro calls print_% funcs
-
-	push	rsi
-	call	%1
-	pop	rsi
-
-	add	rbp, 8
-
-	cmp	rax, 0
-	jb	.error
-
-	add	rbx, rax
-	xor	rdx, rdx
-	inc	rsi
-
-	jmp	.next
-
-
-%endmacro
 
 %macro reg_to_stack 1
 
@@ -40,7 +15,9 @@ global _bprintf
 
 section		.data
 
-	buf:			times 32 db '%'		; buffer
+	buf:		times 32 db '%'		; buffer
+	.len:		equ	$ - buf	
+	hex:		db	"0123456789abcdef"
 
 	__UNIX_write_syscall__	equ	0x2000004	; 0x04 syscall
 
@@ -113,19 +90,43 @@ bprint:
 			add	rsi, rdx		; now just a part of prev str
 			xor	rdx, rdx
 
-			det_sym		'%', .printstack ;%% -> %
+%macro det_sym 2				; macro determines symb after '%'
+	
+	cmp byte	[rsi], %1
+	jne		.next_%2
 
-			det_sym		'c', .print_c
+	push		rsi
+	call	%2
+	pop	rsi
 
-			det_sym		's', .print_s
+	add	rbp, 8
 
-			det_sym		'd', .print_d
+	cmp	rax, 0
+	jb	.error
 
-			det_sym		'o', .print_o
+	add	rbx, rax
+	xor	rdx, rdx
+	inc	rsi
 
-			det_sym		'x', .print_x
+	jmp	.next
 
-			det_sym		'b', .print_b
+	.next_%2:
+
+%endmacro
+
+			;det_sym		'%', .printstack ;%% -> %
+
+			det_sym		'c', print_c
+
+			det_sym		's', print_s
+
+			det_sym		'd', print_d
+
+			det_sym		'o', print_o
+
+			det_sym		'x', print_x
+
+			det_sym		'b', print_b
 
 			jmp .error			; if incorrect letter after '%'
 
@@ -142,24 +143,6 @@ bprint:
 		mov rax, 0xffffffff			; ret (-1)
 
 		ret
-
-	.print_c:
-		print_call	print_c
-		
-	.print_s:
-		print_call	print_s
-
-	.print_d:
-		print_call	print_d
-
-	.print_b:
-		print_call	print_b
-
-	.print_o:
-		print_call	print_o
-
-	.print_x:
-		print_call	print_x
 
 ;*************************bprint******************************
 
@@ -290,7 +273,7 @@ print_b:
 ; | Entry:			| ;
 ; |	rdi <== output dest	| ;
 ; | Destr:			| ;
-; |	rsi, r12, rdx, r13, r14	| ;
+; |	rsi, r12, rdx, r14	| ;
 ; | Ret:			| ;
 ; | 	num of written symbs	| ;
 ; |=============================| ;
@@ -306,37 +289,22 @@ print_o:
 
 	xor	rdx, rdx			; length of num
 
-	.block:
+	mov	r12, 0x7
 
-		xor	r12, r12		; current power of block
-		xor	r13, r13		; current value of block
-
-		.next:
-
-			xor	rax, rax	; current digit value
-			shr	r14, 1
-			adc	rax, 0
-			push	r12
-			call	pow		; rax^r12
-			pop	r12
-			add	r13, rax
-			inc	r12
-			cmp	r12, 2		; end of block
-			ja	.contin
-			jmp	.next
-				
-	.contin:
-
-		add		r13, '0'	; value of block
-		mov byte	[rsi], r13b
+	.next:
+		
+		push		r14
+		and		r14, r12
+		add		r14, '0'
+		mov byte 	[rsi], r14b
 		inc		rdx
-		cmp		r14, 0		; end of num
-		je		.ret
 		dec		rsi
-		jmp		.block
+		pop		r14
+		shr		r14, 3
+		cmp		r14, 0
+		jne		.next
 
-	.ret:
-
+		inc	rsi
 		mov 	rax, __UNIX_write_syscall__
 		syscall
 
@@ -366,45 +334,24 @@ print_x:
 
 	xor	rdx, rdx
 
-	.block:
+	mov	r13, hex
+	sub	r13, buf.len
+	mov	r12, 0xf
 
-		xor	r12, r12		; current power of block
-		xor	r13, r13		; current value of block
-
-		.next:
-
-			xor	rax, rax	; current value of digit
-			shr	r14, 1
-			adc	rax, 0
-			push	r12
-			call	pow		; rax^r12
-			pop	r12
-			add	r13, rax
-			inc	r12
-			cmp	r12, 3		; end of block
-			ja	.contin
-			jmp	.next
-				
-	.contin:
-
-		cmp		r13, 0xa	; 'a' != a + '0'
-		jae		.letter
-		add		r13, '0'
-		jmp		.putc
-
-		.letter:
-			add	r13, 'a' - 0xa
+	.next:
 		
-		.putc:
-			mov byte	[rsi], r13b ; put %x digit to buff
-			inc		rdx
-			cmp		r14, 0
-			je		.ret
-			dec		rsi
-			jmp		.block
+		push		r14
+		and		r14, r12
+		mov byte	al, [r13 + r14]
+		mov byte 	[rsi], al
+		inc		rdx
+		dec		rsi
+		pop		r14
+		shr		r14, 4
+		cmp		r14, 0
+		jne		.next
 
-	.ret:
-
+		inc	rsi
 		mov 	rax, __UNIX_write_syscall__
 		syscall
 
@@ -467,23 +414,3 @@ print_d:
 ; |=============================| ;
 ;				  ;
 ;---------------------------------;
-
-pow:					; mov cx, r12 -->  rep shl rax, 1
-
-	.contin:
-
-		cmp	r12, 0
-		ja	.next
-		jmp	.ret
-
-	.next:
-	
-		dec	r12
-		shl	rax, 1
-		jmp	.contin
-
-	.ret:
-
-		ret
-
-;**************************pow**************************
