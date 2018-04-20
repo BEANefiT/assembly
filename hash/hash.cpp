@@ -3,9 +3,9 @@
 
 #include <iostream>
 #include <array>
-#include "../track/bexcept/bexcept.hpp"
-#include "../track/blist/blist.hpp"
-#include "H4.hpp"
+#include "../../track/bexcept/bexcept.hpp"
+#include "../../track/blist/blist.hpp"
+#include "H0.hpp"
 #include "text.hpp"
 
 void    get_src (struct text* a, const char* src);
@@ -14,6 +14,7 @@ void    mkplot (struct text* a);
 
 int main(int argc, char* argv[])
 {
+    clock_t t = clock();
     try
     {
         if (argc == 1)
@@ -35,6 +36,7 @@ int main(int argc, char* argv[])
         e -> dump();
     }
 
+    std::cout << clock() - t << '\n';
     return 0;
 }
 
@@ -126,8 +128,8 @@ void mkplot (struct text* a)
                    "plot \'buf.dat\'\n", ARRAY_SZ);
 
     fclose (plot);
-    system ("gnuplot mkplot");
-    system ("eog plot.png");
+    //system ("gnuplot mkplot");
+    //system ("eog plot.png");
 }
 
 #endif //__HASH_CPP__

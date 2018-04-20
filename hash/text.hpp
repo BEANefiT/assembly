@@ -3,33 +3,30 @@
 
 #define ARRAY_SZ 1000
 #include "string.h"
-#include "../track/blist/blist.hpp"
-#include "../track/bexcept/bexcept.hpp"
+#include "../../track/blist/blist.hpp"
+#include "../../track/bexcept/bexcept.hpp"
 
 #define bstrcmp( str1, str2 )                       \
-   ({   int str1_len = 0, str2_len = 0, result = -2;\
+   ({   int result = -2;                            \
                                                     \
-        while (str1 [str1_len++])                   \
-            ;                                       \
-                                                    \
-        while (str2 [str2_len++])                   \
-            ;                                       \
-                                                    \
-        __asm__                                     \
+        __asm__ __volatile__                                    \
         (                                           \
-            ".intel_syntax noprefix\n\t"            \
-            "repe cmpsb\n"                          \
-            "jg $+0x0b\n\t"                         \
-            "jl $+0x10\n\t"                         \
-            "mov %0, 0\n\t"                         \
+            ".intel_syntax noprefix\n"            \
+            "mov ch, byte ptr [rdi]\n"              \
+            "cmpsb\n"                                   \
+            "jg $+0x10\n"                                   \
+            "jl $+0x15\n"                             \
+            "cmp ch, 0x0\n"                   \
+            "jne $-0x0a\n"                         \
+            "mov %0, 0\n"                         \
             "jmp $+0x0e\n"                          \
-            "mov %0, 1\n\t"                         \
+            "mov %0, -1\n"                          \
             "jmp $+0x07\n"                          \
-            "mov %0, -1\n\t"                        \
+            "mov %0, 1\n"                          \
             ".att_syntax prefix\n"                  \
             : "=g" (result)                                                 \
-            : "D" (str1), "S" (str2), "c" (std::min (str1_len, str2_len))   \
-            :                                                               \
+            : "D" (str1), "S" (str2)                                        \
+            : "%rcx"                                                        \
         );                                                                  \
         result;                                                             \
     })
@@ -83,11 +80,6 @@ bool text :: in (size_t index, char* str)
             char* str2 = count -> get_elem();
 
             int result = bstrcmp (str, str2);
-
-            if (result == -2)
-            {
-                bexcept_throw ("err while doing bstrcmp");
-            }
 
             if (result < 0)
             {
