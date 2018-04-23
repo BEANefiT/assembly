@@ -5,7 +5,7 @@
 #include <array>
 #include "../../track/bexcept/bexcept.hpp"
 #include "../../track/blist/blist.hpp"
-#include "H0.hpp"
+#include "H1.hpp"
 #include "text.hpp"
 
 void    get_src (struct text* a, const char* src);
@@ -15,6 +15,7 @@ void    mkplot (struct text* a);
 int main(int argc, char* argv[])
 {
     clock_t t = clock();
+
     try
     {
         if (argc == 1)
@@ -37,6 +38,7 @@ int main(int argc, char* argv[])
     }
 
     std::cout << clock() - t << '\n';
+
     return 0;
 }
 
@@ -73,13 +75,15 @@ void test_func (struct text* a)
     try
     {
         for (int i = 0; i < a->size; i++) {
-            while (a->txt[i] == ' ' || a->txt[i] == '\n')
-                if (i < a->size - 1)
+            while (std::isspace (a -> txt[i]))
+                if (i < a -> size - 1)
                     i++;
+                else
+                    break;
 
             int j = i;
 
-            while (a->txt[i] != ' ' && a->txt[i] != '\n')
+            while (!std::isspace (a -> txt[i]))
                 i++;
 
             auto str = new char [i - j + 1];

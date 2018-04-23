@@ -6,29 +6,56 @@
 #include "../../track/blist/blist.hpp"
 #include "../../track/bexcept/bexcept.hpp"
 
-#define bstrcmp( str1, str2 )                       \
-   ({   int result = -2;                            \
-                                                    \
-        __asm__ __volatile__                                    \
-        (                                           \
-            ".intel_syntax noprefix\n"            \
-            "mov ch, byte ptr [rdi]\n"              \
-            "cmpsb\n"                                   \
-            "jg $+0x10\n"                                   \
-            "jl $+0x15\n"                             \
-            "cmp ch, 0x0\n"                   \
-            "jne $-0x0a\n"                         \
-            "mov %0, 0\n"                         \
-            "jmp $+0x0e\n"                          \
-            "mov %0, -1\n"                          \
-            "jmp $+0x07\n"                          \
-            "mov %0, 1\n"                          \
-            ".att_syntax prefix\n"                  \
-            : "=g" (result)                                                 \
-            : "D" (str1), "S" (str2)                                        \
-            : "%rcx"                                                        \
-        );                                                                  \
-        result;                                                             \
+/*#define bstrcmp( str1, str2 )         \
+   ({   int result = -2;                \
+                                        \
+        __asm__ __volatile__            \
+        (                               \
+            ".intel_syntax noprefix\n"  \
+            "mov ch, byte ptr [rdi]\n"  \
+            "cmpsb\n"                   \
+            "jg $+0x10\n"               \
+            "jl $+0x15\n"               \
+            "cmp ch, 0x0\n"             \
+            "jne $-0x0a\n"              \
+            "mov %0, 0\n"               \
+            "jmp $+0x0e\n"              \
+            "mov %0, -1\n"              \
+            "jmp $+0x07\n"              \
+            "mov %0, 1\n"               \
+            ".att_syntax prefix\n"      \
+            : "=g" (result)             \
+            : "D" (str1), "S" (str2)    \
+            : "%rcx"                    \
+        );                              \
+        result;                         \
+    })*/
+
+#define bstrcmp( str1, str2)                \
+    ({  int result;                         \
+                                            \
+        __asm__ __volatile__                \
+        (                                   \
+                ".intel_syntax noprefix\n"  \
+                "mov ch, byte ptr [rdi]\n"  \
+                "cmpsb\n"                   \
+                "jne $+0x7\n"               \
+                "cmp ch, 0x0\n"             \
+                "jne $-0x08\n"              \
+                "dec rsi\n"                 \
+                "dec rdi\n"                 \
+                "xor rax, rax\n"            \
+                "xor rbx, rbx\n"            \
+                "mov ah, byte ptr [rdi]\n"  \
+                "mov bh, byte ptr [rsi]\n"  \
+                "sub rax, rbx\n"            \
+                "mov %0, eax\n"             \
+                ".att_syntax prefix\n"      \
+                :   "=r" (result)           \
+                :   "D" (str1), "S" (str2)  \
+                :   "%rax", "%rbx", "%rcx"  \
+                );                          \
+        result;                             \
     })
 
 struct text
@@ -68,7 +95,7 @@ bool text :: in (size_t index, char* str)
             return 0;
         }
 
-        if (bstrcmp (str, array[index].get_tail() -> get_elem()) > 0) {
+        if (strcmp (str, array[index].get_tail() -> get_elem()) > 0) {
             array[index].push_back(str);
             return 0;
         }
@@ -79,7 +106,7 @@ bool text :: in (size_t index, char* str)
         {
             char* str2 = count -> get_elem();
 
-            int result = bstrcmp (str, str2);
+            int result = strcmp (str, str2);
 
             if (result < 0)
             {
