@@ -5,7 +5,7 @@
 #include <array>
 #include "../../track/bexcept/bexcept.hpp"
 #include "../../track/blist/blist.hpp"
-#include "H1.hpp"
+#include "H4.hpp"
 #include "text.hpp"
 
 void    get_src (struct text* a, const char* src);
@@ -14,8 +14,6 @@ void    mkplot (struct text* a);
 
 int main(int argc, char* argv[])
 {
-    clock_t t = clock();
-
     try
     {
         if (argc == 1)
@@ -23,21 +21,19 @@ int main(int argc, char* argv[])
             bexcept_throw ("You didn't choose the file");
         }
 
-        text a;
+        text txt;
 
-        get_src (&a, argv[1]);
+        get_src (&txt, argv[1]);
 
-        test_func (&a);
+        test_func (&txt);
 
-        mkplot (&a);
+        mkplot (&txt);
     }
 
     catch (bexcept* e)
     {
         e -> dump();
     }
-
-    std::cout << clock() - t << '\n';
 
     return 0;
 }
@@ -75,21 +71,21 @@ void test_func (struct text* a)
     try
     {
         for (int i = 0; i < a->size; i++) {
-            while (std::isspace (a -> txt[i]))
-                if (i < a -> size - 1)
-                    i++;
-                else
-                    break;
+            while ((a -> txt [i++]) == ' ')
+                ;
+
+            if (i >= a -> size - 1)
+                break;
 
             int j = i;
 
-            while (!std::isspace (a -> txt[i]))
+            while ((a -> txt[i]) != ' ')
                 i++;
 
             auto str = new char [i - j + 1];
 
             for (int k = 0; k < i - j; k++)
-                str[k] = a->txt[j + k];
+                str[k] = a -> txt[j + k];
 
             str[i - j] = '\0';
 
@@ -132,8 +128,8 @@ void mkplot (struct text* a)
                    "plot \'buf.dat\'\n", ARRAY_SZ);
 
     fclose (plot);
-    //system ("gnuplot mkplot");
-    //system ("eog plot.png");
+    system ("gnuplot mkplot");
+    system ("eog plot.png");
 }
 
 #endif //__HASH_CPP__

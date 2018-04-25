@@ -95,8 +95,11 @@ bool format (struct text* a)
 
     for (int i = 0; i < a -> size; i++)
     {
-        if (std::isalpha (a -> txt [i]) || std::isspace (a -> txt[i]))
+        if (std::isalpha (a -> txt [i]))
             tmp [a -> new_sz++] = a -> txt [i];
+
+        if (std::isspace (a -> txt[i]))
+            tmp [a -> new_sz++] = ' ';
     }
 
     delete [] a -> txt;

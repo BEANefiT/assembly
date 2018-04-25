@@ -95,18 +95,18 @@ bool text :: in (size_t index, char* str)
             return 0;
         }
 
-        if (strcmp (str, array[index].get_tail() -> get_elem()) > 0) {
+        if (bstrcmp (str, array[index].get_tail() -> get_elem()) > 0) {
             array[index].push_back(str);
             return 0;
         }
 
         auto count = array[index].get_head();
 
-        for (int k = 0; k < array[index].size(); k++)
+        for (int i = 0; i < array[index].size(); i++)
         {
             char* str2 = count -> get_elem();
 
-            int result = strcmp (str, str2);
+            int result = bstrcmp (str, str2);
 
             if (result < 0)
             {
