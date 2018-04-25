@@ -1,6 +1,7 @@
 #ifdef DEF_TRAN
 
-DEF_TRAN (0x16, { db (0xb8); dd (0x3c); dw (0x050f); });
+DEF_TRAN (0x16, { db (0xc3); });
+DEF_TRAN (0x1d, { db (0xb8); dw (0x3c); dw (0x050f); });
 
 #endif /*DEF_TRAN*/
 
