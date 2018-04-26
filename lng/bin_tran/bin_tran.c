@@ -150,6 +150,7 @@ int mkelf (struct tran_t* tran)
     memcpy (elf + 0xb0, tran -> dest, tran -> dest_sz);
     free (tran -> dest);
     tran -> dest = elf;
+    tran -> dest_cur = elf;
 
     mkhdr (tran);
 
@@ -162,7 +163,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    fwrite (tran -> dest, 1, (size_t) (tran -> dest_cur - tran -> dest), file);
+    fwrite (tran -> dest, 1, tran -> dest_sz + 0xb0, file);
 
     fclose (file);
 
@@ -214,6 +215,9 @@ void mkhdr (struct tran_t* tran)
 
         //.data
     size_t data_offs = tran -> dest_sz + 4;
+    dd (0x01);                  //PT_LOAD
+    dd (0x06);                  //RW
+
     dq (data_offs);             //offset of the segment
     dq (0x600000 + data_offs);  //virtual addr of the segment in memory
     dq (0x600000 + data_offs);  //phys    addr of the segment in memory
