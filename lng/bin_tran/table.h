@@ -1,7 +1,7 @@
 #ifdef DEF_TRAN
 
 DEF_TRAN (0x16, { db (0xc3); });
-DEF_TRAN (0x1d, { db (0xb8); dw (0x3c); dw (0x050f); });
+DEF_TRAN (0x1d, { db (0xb8); dd (0x3c); dd (0x050f); });
 
 #endif /*DEF_TRAN*/
 
@@ -17,14 +17,14 @@ do{                                     \
     tran -> dest_cur += 1;              \
 } while (0)
 
-#define dd( value )                     \
+#define dw( value )                     \
 do{                                     \
     int tmp = value;                    \
     memcpy (tran -> dest_cur, &tmp, 2); \
     tran -> dest_cur += 2;              \
 } while (0)
 
-#define dw( value )                     \
+#define dd( value )                     \
 do{                                     \
     int tmp = value;                    \
     memcpy (tran -> dest_cur, &tmp, 4); \
