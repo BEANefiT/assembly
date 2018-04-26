@@ -138,7 +138,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    void* elf = calloc (tran -> dest_sz + 0xb0, 1);
+    void* elf = calloc (tran -> dest_sz + 0xc2, 1);
 
     if (!elf)
     {
@@ -147,7 +147,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    memcpy (elf + 0xb0, tran -> dest, tran -> dest_sz);
+    memcpy (elf + 0xc2, tran -> dest, tran -> dest_sz);
     free (tran -> dest);
     tran -> dest = elf;
     tran -> dest_cur = elf;
@@ -163,7 +163,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    fwrite (tran -> dest, 1, tran -> dest_sz + 0xb0, file);
+    fwrite (tran -> dest, 1, tran -> dest_sz + 0xc2, file);
 
     fclose (file);
 
@@ -172,56 +172,58 @@ int mkelf (struct tran_t* tran)
 
 void mkhdr (struct tran_t* tran)
 {
-    //ELF HEADER
+    /*ELF HEADER*/
     db (0x7f); db ('E'); db ('L'); db ('F');    //sign
 
-    db (0x02);      //64-bit format
-    db (0x01);      //little-endian
-    db (0x01);      //current version
-    db (0x00);      //System V
+    db (0x02);                                  //64-bit format
+    db (0x01);                                  //little-endian
+    db (0x01);                                  //current version
+    db (0x00);                                  //System V
 
-    dq (0x00);      //ABIversion + unused bytes
+    dq (0x00);                                  //ABIversion + unused bytes
     
-    dw (0x02);      //executable
-    dw (0x3e);      //x86-64
+    dw (0x02);                                  //executable
+    dw (0x3e);                                  //x86-64
 
-    dd (0x01);      //e_version
+    dd (0x01);                                  //e_version
 
-    dq (0x4000b0);  //e_entry - mem_addr of _start
-    dq (0x40);      //e_phoff - offs of the phdrtab
-    dq (0x00);      //e_shoff - offs of the shdrtab (I don't use that)
+    dq (0x4000b0);                              //e_entry - mem_addr of _start
+    dq (0x40);                                  //e_phoff - offs of the phdrtab
+    dq (0x00);                                  //e_shoff - offs of the shdrtab (I don't use that)
 
-    dd (0x00);      //e_flags - depends on the architecture
+    dd (0x00);                                  //e_flags - depends on the architecture
 
-    dw (0x40);      //e_ehsize - hdr_sz
-    dw (0x38);      //e_phentsize - phdr_sz
-    dw (0x02);      //e_phnum - num of phdrs
+    dw (0x40);                                  //e_ehsize - hdr_sz
+    dw (0x38);                                  //e_phentsize - phdr_sz
+    dw (0x02);                                  //e_phnum - num of phdrs
 
-    dw (0x00);      //e_shentsize
-    dw (0x00);      //e_shnum       (I don't create section hdrs)
-    dw (0x00);      //e_shstrndx
+    dw (0x00);                                  //e_shentsize
+    dw (0x00);                                  //e_shnum       (I don't create section hdrs)
+    dw (0x00);                                  //e_shstrndx
 
-    //PROGRAM HEADER TABLE
-        //.text header
-    dd (0x01);      //PT_LOAD
-    dd (0x05);      //R E
+    /*PROGRAM HEADER TABLE*/
+        /*.text header*/
+    dd (0x01);                                  //PT_LOAD
+    dd (0x05);                                  //R E
 
-    dq (0x00);      //offset of the segment
-    dq (0x400000);  //virtual addr of the segment in memory
-    dq (0x400000);  //phys    addr of the segment in memory
-    dq (0xb0 + tran -> dest_sz); //size of segment in file
-    dq (0xb0 + tran -> dest_sz); //size of segment in memory
-    dq (0x10);      //p_align; ignored, because file is executable
+    dq (0x00);                                  //offset of the segment
+    dq (0x400000);                              //virtual addr of the segment in memory
+    dq (0x400000);                              //phys    addr of the segment in memory
+    dq (0xc2 + tran -> dest_sz);                //size of segment in file
+    dq (0xc2 + tran -> dest_sz);                //size of segment in memory
+    dq (0x10);                                  //p_align; ignored, because file is executable
 
-        //.data
-    size_t data_offs = tran -> dest_sz + 4;
-    dd (0x01);                  //PT_LOAD
-    dd (0x06);                  //RW
+        /*.data header*/
+    dd (0x01);                                  //PT_LOAD
+    dd (0x06);                                  //RW
 
-    dq (data_offs);             //offset of the segment
-    dq (0x600000 + data_offs);  //virtual addr of the segment in memory
-    dq (0x600000 + data_offs);  //phys    addr of the segment in memory
-    dq (0x00);                  //size of segment in file
-    dq (0x00);                  //size of segment in memory
-    dq (0x10);                  //p_align; ignored, because file is executable
+    dq (0xb2);                                  //offset of the segment
+    dq (0x6000b2);                              //virtual addr of the segment in memory
+    dq (0x6000b2);                              //phys    addr of the segment in memory
+    dq (0x10);                                  //size of segment in file
+    dq (0x10);                                  //size of segment in memory
+    dq (0x10);                                  //p_align; ignored, because file is executable
+
+    db (0xeb);                                  //jmp over .data
+    db (0x10);
 }
