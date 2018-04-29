@@ -138,7 +138,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    void* elf = calloc (tran -> dest_sz + 0xc2, 1);
+    void* elf = calloc (tran -> dest_sz + 0xd2, 1);
 
     if (!elf)
     {
@@ -147,7 +147,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    memcpy (elf + 0xc2, tran -> dest, tran -> dest_sz);
+    memcpy (elf + 0xd2, tran -> dest, tran -> dest_sz);
     free (tran -> dest);
     tran -> dest = elf;
     tran -> dest_cur = elf;
@@ -163,7 +163,7 @@ int mkelf (struct tran_t* tran)
         return -1;
     }
 
-    fwrite (tran -> dest, 1, tran -> dest_sz + 0xc2, file);
+    fwrite (tran -> dest, 1, tran -> dest_sz + 0xd2, file);
 
     fclose (file);
 
@@ -209,8 +209,8 @@ void mkhdr (struct tran_t* tran)
     dq (0x00);                                  //offset of the segment
     dq (0x400000);                              //virtual addr of the segment in memory
     dq (0x400000);                              //phys    addr of the segment in memory
-    dq (0xc2 + tran -> dest_sz);                //size of segment in file
-    dq (0xc2 + tran -> dest_sz);                //size of segment in memory
+    dq (0xd2 + tran -> dest_sz);                //size of segment in file
+    dq (0xd2 + tran -> dest_sz);                //size of segment in memory
     dq (0x10);                                  //p_align; ignored, because file is executable
 
         /*.data header*/
@@ -220,10 +220,27 @@ void mkhdr (struct tran_t* tran)
     dq (0xb2);                                  //offset of the segment
     dq (0x6000b2);                              //virtual addr of the segment in memory
     dq (0x6000b2);                              //phys    addr of the segment in memory
-    dq (0x10);                                  //size of segment in file
-    dq (0x10);                                  //size of segment in memory
+    dq (0x20);                                  //size of segment in file
+    dq (0x20);                                  //size of segment in memory
     dq (0x10);                                  //p_align; ignored, because file is executable
 
     db (0xeb);                                  //jmp over .data
-    db (0x10);
+    db (0x20);
+
+    db ('0');                                   //buffer "0123456789abcdef"
+    db ('1');
+    db ('2');
+    db ('3');
+    db ('4');
+    db ('5');
+    db ('6');
+    db ('7');
+    db ('8');
+    db ('9');
+    db ('a');
+    db ('b');
+    db ('c');
+    db ('d');
+    db ('e');
+    db ('f');
 }
