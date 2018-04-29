@@ -54,6 +54,27 @@ DEF_TRAN (0x0c, {
                     dw (0x050f);
                 });
 
+/*JMP*/
+DEF_TRAN (0x0e, { jmp (0x79); });
+
+/*JE*/
+DEF_TRAN (0x0f, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (2); });
+
+/*JNE*/
+DEF_TRAN (0x10, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (3); });
+
+/*JA*/
+DEF_TRAN (0x11, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (5); });
+
+/*JAE*/
+DEF_TRAN (0x12, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (1); });
+
+/*JB*/
+DEF_TRAN (0x13, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (0); });
+
+/*JBE*/
+DEF_TRAN (0x14, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (4); });
+
 
 #endif /*DEF_TRAN*/
 
@@ -98,4 +119,11 @@ do{                                     \
     result;                                         \
 })
 
+#define jmp( num )                                      \
+do{                                                     \
+    tran -> src_cur += 4;                               \
+    int offs = getint();                                \
+    db (0x72 + num); db (offs - (int)(tran -> dest_cur) \
+                              + (int)(tran -> dest));   \
+} while (0)
 #endif /*__TABLE_H__*/
