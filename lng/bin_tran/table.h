@@ -78,12 +78,50 @@ DEF_TRAN (0x14, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (4); });
 /*CALL*/
 DEF_TRAN (0x15, {
                     tran -> src_cur += 4;
-                    int offs = getint() - (int)(tran -> dest_cur)
-                                        + (int)(tran -> dest);
+                    int offs = getint() - (long)(tran -> dest_cur)
+                                        + (long)(tran -> dest);
 
                     db (0xe8); dd (offs - 5);
                 });
 
+/*RAMPUSH*/
+DEF_TRAN (0x03, {
+                    db (0x55); dw (0x8148); db (0xed); dd(getint() * 8);
+                    dd (0x458b48);
+                    db (0x5d);
+                    db (0x50);
+                });
+
+/*RAMPUSHR*/
+DEF_TRAN (0x04, {
+                    db (0x55);
+                    dw (0x8948);    db (getint() * 8 + 0xc0);
+                    db (0xbb);      dd (0x08);
+                    dw (0xf748);    db (0xe3);
+                    dw (0x2948);    db (0xc5);
+                    dd (0x458b48);
+                    db (0x5d);
+                    db (0x50);
+                });
+
+/*RAMPOP*/
+DEF_TRAN (0x06, {
+                    db (0x58);      db (0x55);
+                    dw (0x8148);    db (0xed);  dd (getint() * 8);
+                    dd (0x458948);
+                    db (0x5d);
+                });
+
+/*RAMPOPR*/
+DEF_TRAN (0x07, {
+                    dw (0x5d41);    db (0x55);
+                    dw (0x8948);    db (getint() * 8 + 0xc0);
+                    db (0xbb);      dd (0x08);
+                    dw (0xf748);    db (0xe3);
+                    dw (0x2948);    db (0xc5);
+                    dd (0x6d894c);
+                    db (0x5d);
+                });
 
 #endif /*DEF_TRAN*/
 
@@ -131,8 +169,8 @@ do{                                     \
 #define jmp( num )                                      \
 do{                                                     \
     tran -> src_cur += 4;                               \
-    int offs = getint() - (int)(tran -> dest_cur)       \
-                        + (int)(tran -> dest);          \
+    int offs = getint() - (long)(tran -> dest_cur)      \
+                        + (long)(tran -> dest);         \
     db (0x72 + num); db (offs - 2);                     \
 } while (0)
 #endif /*__TABLE_H__*/
