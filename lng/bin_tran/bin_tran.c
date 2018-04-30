@@ -98,7 +98,10 @@ int translate (struct tran_t* tran)
 
     tran -> dest_cur = tran -> dest;
 
-    
+    dw (0x8948);    db (0xe5);                  //mov rbp, rsp
+    dw (0x8148);    db (0xec);  dd (0x400);     //sub rsp, 1024 (RAM)
+
+    tran -> dest += 10;
 
     while ((size_t) (tran -> src_cur - tran -> src) < tran -> src_sz)
     {
@@ -121,9 +124,12 @@ int translate (struct tran_t* tran)
       
         #undef DEF_TRAN
     }
+    
+    dw (0x8148);    db (0xc5);  dd (0x400);     //add rsp, 1024 (delete RAM)
 
     free (tran -> src);
 
+    tran -> dest    -= 10;
     tran -> dest_sz = (size_t) (tran -> dest_cur - tran -> dest);
 
     return 0;

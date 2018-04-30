@@ -173,4 +173,5 @@ do{                                                     \
                         + (long)(tran -> dest);         \
     db (0x72 + num); db (offs - 2);                     \
 } while (0)
+
 #endif /*__TABLE_H__*/
