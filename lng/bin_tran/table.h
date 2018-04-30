@@ -4,7 +4,7 @@
 DEF_TRAN (0x16, { db (0xc3); });
 
 /*EXIT*/
-DEF_TRAN (0x1d, { db (0xb8); dd (0x3c); dw (0x8948); db (0xc7); dd (0x050f); });
+DEF_TRAN (0x1d, { db (0xb8); dd (0x3c); dw (0x3148); db (0xff); dw (0x050f); });
 
 /*PUSH*/
 DEF_TRAN (0x01, { db (0xb8); dd (getint()); db (0x50); });
@@ -75,6 +75,15 @@ DEF_TRAN (0x13, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (0); });
 /*JBE*/
 DEF_TRAN (0x14, { db (0x5b); db (0x58); dw (0x3948); db (0xd8); jmp (4); });
 
+/*CALL*/
+DEF_TRAN (0x15, {
+                    tran -> src_cur += 4;
+                    int offs = getint() - (int)(tran -> dest_cur)
+                                        + (int)(tran -> dest);
+
+                    db (0xe8); dd (offs - 5);
+                });
+
 
 #endif /*DEF_TRAN*/
 
@@ -122,8 +131,8 @@ do{                                     \
 #define jmp( num )                                      \
 do{                                                     \
     tran -> src_cur += 4;                               \
-    int offs = getint();                                \
-    db (0x72 + num); db (offs - (int)(tran -> dest_cur) \
-                              + (int)(tran -> dest));   \
+    int offs = getint() - (int)(tran -> dest_cur)       \
+                        + (int)(tran -> dest);          \
+    db (0x72 + num); db (offs - 2);                     \
 } while (0)
 #endif /*__TABLE_H__*/
