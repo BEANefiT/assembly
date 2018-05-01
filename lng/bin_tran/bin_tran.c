@@ -124,9 +124,6 @@ int translate (struct tran_t* tran)
       
         #undef DEF_TRAN
     }
-    
-    dw (0x8148);    db (0xc5);  dd (0x400);     //add rsp, 1024 (delete RAM)
-
     free (tran -> src);
 
     tran -> dest    -= 10;

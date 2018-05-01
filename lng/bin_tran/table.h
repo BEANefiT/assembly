@@ -4,7 +4,10 @@
 DEF_TRAN (0x16, { db (0xc3); });
 
 /*EXIT*/
-DEF_TRAN (0x1d, { db (0xb8); dd (0x3c); dw (0x3148); db (0xff); dw (0x050f); });
+DEF_TRAN (0x1d, { 
+                    dw (0x8148);    db (0xc5);  dd (0x400);     //delete RAM
+                    db (0xb8);      dd (0x3c);  dw (0x3148); db (0xff); dw (0x050f); 
+                });
 
 /*PUSH*/
 DEF_TRAN (0x01, { db (0xb8); dd (getint()); db (0x50); });
@@ -33,11 +36,11 @@ DEF_TRAN (0x0c, {
                     dw (0xbe48);    dq (0x6000d1);
 
                     dw (0x06c6);    db (0x0a);
-                    db (0xbb);      dd (0x0f);
+                    db (0xb9);      dd (0x0f);
 
                     dw (0xff48);    db (0xce);
                     db (0x50);
-                    dw (0x2148);    db (0xd8);
+                    dw (0x2148);    db (0xc8);
                     dw (0x0548);    dd (0x6000b2);
                     db (0x8a);      db (0x00);
                     db (0x88);      db (0x06);
